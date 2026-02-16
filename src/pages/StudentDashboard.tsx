@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { NotificationBell } from "@/components/NotificationBell";
 import { EmojiPicker } from "@/components/EmojiPicker";
 import { FileViewerButton } from "@/components/FileViewer";
+import FloatingDots from "@/components/FloatingDots";
 
 interface Profile {
   axon_id: string | null;
@@ -293,7 +294,8 @@ const StudentDashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <FloatingDots />
       <nav className="flex items-center justify-between px-8 py-4 border-b border-border/50 sticky top-0 z-50 bg-background/80 backdrop-blur-sm">
         <div className="flex items-center gap-2">
           <Hexagon className="w-4 h-4 text-foreground" strokeWidth={1.5} />

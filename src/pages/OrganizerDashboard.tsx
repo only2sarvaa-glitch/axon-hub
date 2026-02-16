@@ -15,6 +15,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { ShareEvent } from "@/components/ShareEvent";
 import { EmojiPicker } from "@/components/EmojiPicker";
 import { FileViewerButton } from "@/components/FileViewer";
+import FloatingDots from "@/components/FloatingDots";
 
 interface Hackathon {
   id: string;
@@ -160,6 +161,13 @@ const OrganizerDashboard = () => {
 
   const handleCreateHackathon = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate required fields
+    if (!hackForm.name.trim() || !hackForm.description.trim() || !hackForm.location.trim() || !hackForm.event_date) {
+      toast({ title: "Missing fields", description: "Name, description, location, and date are required.", variant: "destructive" });
+      return;
+    }
+
     setLoading(true);
 
     const [brochureUrl, posterUrl, demoPptUrl] = await Promise.all([
@@ -324,7 +332,8 @@ const OrganizerDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <FloatingDots />
       <nav className="flex items-center justify-between px-8 py-4 border-b border-border/50 sticky top-0 z-50 bg-background/80 backdrop-blur-sm">
         <div className="flex items-center gap-2">
           <Hexagon className="w-4 h-4 text-foreground" strokeWidth={1.5} />
@@ -400,7 +409,7 @@ const OrganizerDashboard = () => {
                 </div>
                 <form onSubmit={handleCreateHackathon} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
-                    <Label className="text-[10px] font-mono tracking-wider text-muted-foreground">EVENT NAME</Label>
+                    <Label className="text-[10px] font-mono tracking-wider text-muted-foreground">EVENT NAME *</Label>
                     <Input value={hackForm.name} onChange={e => setHackForm({...hackForm, name: e.target.value})} required className="mt-1 bg-background border-border" />
                   </div>
                   <div>
@@ -412,12 +421,12 @@ const OrganizerDashboard = () => {
                     </select>
                   </div>
                   <div>
-                    <Label className="text-[10px] font-mono tracking-wider text-muted-foreground">DATE</Label>
-                    <Input type="date" value={hackForm.event_date} onChange={e => setHackForm({...hackForm, event_date: e.target.value})} className="mt-1 bg-background border-border" />
+                    <Label className="text-[10px] font-mono tracking-wider text-muted-foreground">DATE *</Label>
+                    <Input type="date" value={hackForm.event_date} onChange={e => setHackForm({...hackForm, event_date: e.target.value})} required className="mt-1 bg-background border-border" />
                   </div>
                   <div>
-                    <Label className="text-[10px] font-mono tracking-wider text-muted-foreground">LOCATION</Label>
-                    <Input value={hackForm.location} onChange={e => setHackForm({...hackForm, location: e.target.value})} className="mt-1 bg-background border-border" />
+                    <Label className="text-[10px] font-mono tracking-wider text-muted-foreground">LOCATION *</Label>
+                    <Input value={hackForm.location} onChange={e => setHackForm({...hackForm, location: e.target.value})} required className="mt-1 bg-background border-border" />
                   </div>
                   <div>
                     <Label className="text-[10px] font-mono tracking-wider text-muted-foreground">CASH PRIZE (₹)</Label>
@@ -432,8 +441,8 @@ const OrganizerDashboard = () => {
                     <Input type="number" value={hackForm.team_size_limit} onChange={e => setHackForm({...hackForm, team_size_limit: e.target.value})} className="mt-1 bg-background border-border" />
                   </div>
                   <div className="md:col-span-2">
-                    <Label className="text-[10px] font-mono tracking-wider text-muted-foreground">DESCRIPTION</Label>
-                    <textarea value={hackForm.description} onChange={e => setHackForm({...hackForm, description: e.target.value})} rows={3} className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none" />
+                    <Label className="text-[10px] font-mono tracking-wider text-muted-foreground">DESCRIPTION *</Label>
+                    <textarea value={hackForm.description} onChange={e => setHackForm({...hackForm, description: e.target.value})} rows={3} required className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none" />
                   </div>
                   <div className="md:col-span-2">
                     <Label className="text-[10px] font-mono tracking-wider text-muted-foreground">PROBLEM STATEMENTS</Label>
