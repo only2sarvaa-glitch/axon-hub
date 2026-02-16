@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationBell } from "@/components/NotificationBell";
 import { EmojiPicker } from "@/components/EmojiPicker";
+import { FileViewerButton } from "@/components/FileViewer";
 
 interface Profile {
   axon_id: string | null;
@@ -405,18 +406,18 @@ const StudentDashboard = () => {
                       {/* Resources */}
                       <div className="flex flex-wrap gap-2 mb-4">
                         {selectedHackathon.brochure_url && (
-                          <a href={selectedHackathon.brochure_url} target="_blank" rel="noopener noreferrer">
+                          <FileViewerButton url={selectedHackathon.brochure_url} title={`${selectedHackathon.name} - Brochure`}>
                             <Button variant="outline" size="sm" className="font-mono text-[10px]">
                               <FileText className="w-3 h-3 mr-1" /> BROCHURE
                             </Button>
-                          </a>
+                          </FileViewerButton>
                         )}
                         {selectedHackathon.demo_ppt_url && (
-                          <a href={selectedHackathon.demo_ppt_url} target="_blank" rel="noopener noreferrer">
+                          <FileViewerButton url={selectedHackathon.demo_ppt_url} title={`${selectedHackathon.name} - Demo PPT`}>
                             <Button variant="outline" size="sm" className="font-mono text-[10px]">
                               <FileText className="w-3 h-3 mr-1" /> DEMO PPT
                             </Button>
-                          </a>
+                          </FileViewerButton>
                         )}
                       </div>
 
