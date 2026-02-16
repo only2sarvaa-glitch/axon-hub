@@ -13,6 +13,9 @@ import OrganizerDashboard from "./pages/OrganizerDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import CertificateVerify from "./pages/CertificateVerify";
 import ResetPassword from "./pages/ResetPassword";
+import Profile from "./pages/Profile";
+import Messages from "./pages/Messages";
+import Community from "./pages/Community";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +35,10 @@ const App = () => (
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/verify" element={<CertificateVerify />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/community" element={<Community />} />
+          <Route path="*" element={<NotFound />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
