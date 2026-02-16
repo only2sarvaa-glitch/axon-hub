@@ -8,9 +8,12 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   LogOut, Plus, Users, Upload, Calendar, Award, CheckCircle, XCircle, X,
   Send, MessageSquare, ChevronDown, ChevronRight, FileText, ExternalLink,
-  Link as LinkIcon, StopCircle, Hexagon, Eye
+  Link as LinkIcon, StopCircle, Hexagon, Eye, Image
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { NotificationBell } from "@/components/NotificationBell";
+import { ShareEvent } from "@/components/ShareEvent";
+import { EmojiPicker } from "@/components/EmojiPicker";
 
 interface Hackathon {
   id: string;
@@ -27,6 +30,8 @@ interface Hackathon {
   food_available: boolean | null;
   accommodation: boolean | null;
   brochure_url: string | null;
+  poster_url: string | null;
+  demo_ppt_url: string | null;
 }
 
 interface Team {
@@ -96,6 +101,8 @@ const OrganizerDashboard = () => {
     team_size_limit: "4", food_available: false, accommodation: false,
   });
   const [brochureFile, setBrochureFile] = useState<File | null>(null);
+  const [posterFile, setPosterFile] = useState<File | null>(null);
+  const [demoPptFile, setDemoPptFile] = useState<File | null>(null);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -120,20 +127,17 @@ const OrganizerDashboard = () => {
 
     if (hacks && hacks.length > 0) {
       const hackIds = hacks.map((h: any) => h.id);
-      const [teamsRes, membersRes] = await Promise.all([
+      const [teamsRes] = await Promise.all([
         supabase.from("teams").select("*").in("hackathon_id", hackIds),
-        supabase.from("team_members").select("*"),
       ]);
       const allTeams = (teamsRes.data || []) as Team[];
       setTeams(allTeams);
       
-      // Get team members for these teams
       const teamIds = allTeams.map(t => t.id);
       if (teamIds.length > 0) {
         const { data: members } = await supabase.from("team_members").select("*").in("team_id", teamIds);
         setTeamMembers((members || []) as TeamMember[]);
         
-        // Get all user profiles
         const userIds = [...new Set([...allTeams.map(t => t.leader_id), ...(members || []).map((m: any) => m.user_id)])];
         if (userIds.length > 0) {
           const { data: profs } = await supabase.from("profiles").select("*").in("user_id", userIds);
@@ -145,19 +149,23 @@ const OrganizerDashboard = () => {
 
   const getProfile = (userId: string) => profiles.find(p => p.user_id === userId);
 
+  const uploadFile = async (file: File, bucket: string) => {
+    const fileName = `${Date.now()}_${file.name}`;
+    const { error } = await supabase.storage.from(bucket).upload(fileName, file);
+    if (error) return "";
+    const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(fileName);
+    return publicUrl;
+  };
+
   const handleCreateHackathon = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    let brochureUrl = "";
-    if (brochureFile) {
-      const fileName = `${Date.now()}_${brochureFile.name}`;
-      const { error: upErr } = await supabase.storage.from("brochures").upload(fileName, brochureFile);
-      if (!upErr) {
-        const { data: { publicUrl } } = supabase.storage.from("brochures").getPublicUrl(fileName);
-        brochureUrl = publicUrl;
-      }
-    }
+    const [brochureUrl, posterUrl, demoPptUrl] = await Promise.all([
+      brochureFile ? uploadFile(brochureFile, "brochures") : Promise.resolve(""),
+      posterFile ? uploadFile(posterFile, "posters") : Promise.resolve(""),
+      demoPptFile ? uploadFile(demoPptFile, "demo-ppts") : Promise.resolve(""),
+    ]);
 
     const { error } = await supabase.from("hackathons").insert({
       ...hackForm,
@@ -166,6 +174,8 @@ const OrganizerDashboard = () => {
       cash_prize: Number(hackForm.cash_prize),
       team_size_limit: Number(hackForm.team_size_limit),
       brochure_url: brochureUrl,
+      poster_url: posterUrl,
+      demo_ppt_url: demoPptUrl,
     });
     setLoading(false);
     if (error) {
@@ -175,15 +185,27 @@ const OrganizerDashboard = () => {
       setShowCreateForm(false);
       setHackForm({ name: "", theme: "Technical", description: "", problem_statements: "", location: "", event_date: "", entry_fee: "0", cash_prize: "0", team_size_limit: "4", food_available: false, accommodation: false });
       setBrochureFile(null);
+      setPosterFile(null);
+      setDemoPptFile(null);
       fetchData();
     }
   };
 
   const handleTeamAction = async (teamId: string, approve: boolean) => {
+    const team = teams.find(t => t.id === teamId);
     const { error } = await supabase.from("teams").update({ status: approve ? "accepted" : "rejected" }).eq("id", teamId);
     if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
     else {
       toast({ title: approve ? "Team Accepted" : "Team Rejected" });
+      // Notify team leader
+      if (team) {
+        await supabase.from("notifications").insert({
+          user_id: team.leader_id,
+          type: approve ? "team_accepted" : "team_rejected",
+          title: approve ? "Team Accepted! 🎉" : "Team Rejected",
+          message: `Your team "${team.team_name}" has been ${approve ? "accepted" : "rejected"}.`,
+        });
+      }
       fetchData();
     }
   };
@@ -225,6 +247,14 @@ const OrganizerDashboard = () => {
       verified: true,
     });
 
+    // Notify student
+    await supabase.from("notifications").insert({
+      user_id: studentProfile.user_id,
+      type: "certificate",
+      title: "New Certificate! 🏆",
+      message: `You received a ${certForm.certificate_type} certificate.`,
+    });
+
     setLoading(false);
     if (certError) {
       toast({ title: "Error", description: certError.message, variant: "destructive" });
@@ -249,7 +279,6 @@ const OrganizerDashboard = () => {
     setChatHackathonId(hackathonId);
     const { data } = await supabase.from("chat_messages").select("*").eq("hackathon_id", hackathonId).order("created_at", { ascending: true }).limit(200);
     setChatMessages((data || []) as ChatMessage[]);
-
     const senderIds = [...new Set((data || []).map((m: any) => m.sender_id))];
     if (senderIds.length > 0) {
       const { data: profs } = await supabase.from("profiles").select("user_id, name").in("user_id", senderIds);
@@ -300,8 +329,9 @@ const OrganizerDashboard = () => {
           <Hexagon className="w-4 h-4 text-foreground" strokeWidth={1.5} />
           <span className="font-mono text-lg font-bold tracking-[0.3em] text-foreground">AXON</span>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <span className="text-xs font-mono text-muted-foreground">{user?.user_metadata?.club_name || "Organizer"}</span>
+          {user && <NotificationBell userId={user.id} />}
           <Button variant="ghost" size="sm" onClick={handleLogout}><LogOut className="w-4 h-4" /></Button>
         </div>
       </nav>
@@ -349,8 +379,9 @@ const OrganizerDashboard = () => {
                     ))}
                     <div ref={chatEndRef} />
                   </div>
-                  <div className="flex gap-2">
-                    <Input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage()} placeholder="Send update to group..." className="bg-card border-border" />
+                  <div className="flex gap-2 items-center">
+                    <EmojiPicker onSelect={emoji => setChatInput(prev => prev + emoji)} />
+                    <Input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage()} placeholder="Send update to group..." className="bg-card border-border flex-1" />
                     <Button onClick={sendMessage} size="sm" className="bg-foreground text-background hover:bg-foreground/90"><Send className="w-4 h-4" /></Button>
                   </div>
                 </div>
@@ -407,6 +438,18 @@ const OrganizerDashboard = () => {
                     <Label className="text-[10px] font-mono tracking-wider text-muted-foreground">PROBLEM STATEMENTS</Label>
                     <textarea value={hackForm.problem_statements} onChange={e => setHackForm({...hackForm, problem_statements: e.target.value})} rows={3} className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none" placeholder="One per line..." />
                   </div>
+
+                  {/* Media uploads */}
+                  <div>
+                    <Label className="text-[10px] font-mono tracking-wider text-muted-foreground flex items-center gap-1"><Image className="w-3 h-3" /> EVENT POSTER (IMAGE)</Label>
+                    <Input type="file" accept="image/*" onChange={e => setPosterFile(e.target.files?.[0] || null)} className="mt-1 bg-background border-border text-xs" />
+                    {posterFile && <p className="text-[10px] text-success mt-1 font-mono">{posterFile.name}</p>}
+                  </div>
+                  <div>
+                    <Label className="text-[10px] font-mono tracking-wider text-muted-foreground">DEMO PPT (FOR STUDENTS)</Label>
+                    <Input type="file" accept=".ppt,.pptx,.pdf" onChange={e => setDemoPptFile(e.target.files?.[0] || null)} className="mt-1 bg-background border-border text-xs" />
+                    {demoPptFile && <p className="text-[10px] text-success mt-1 font-mono">{demoPptFile.name}</p>}
+                  </div>
                   <div>
                     <Label className="text-[10px] font-mono tracking-wider text-muted-foreground">BROCHURE PDF (OPTIONAL)</Label>
                     <Input type="file" accept=".pdf" onChange={e => setBrochureFile(e.target.files?.[0] || null)} className="mt-1 bg-background border-border text-xs" />
@@ -445,29 +488,39 @@ const OrganizerDashboard = () => {
                 const isExpanded = expandedHack === h.id;
                 return (
                   <div key={h.id} className="rounded-xl border border-border bg-card">
-                    {/* Header */}
                     <button onClick={() => setExpandedHack(isExpanded ? null : h.id)} className="w-full flex items-center justify-between p-5 text-left">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">{h.name}</h3>
-                          <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${h.status === "ended" ? "bg-muted text-muted-foreground" : "bg-success/10 text-success"}`}>
-                            {h.status.toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3 mt-1">
-                          <span className="text-[10px] font-mono text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">{h.theme}</span>
-                          {h.event_date && <span className="text-xs text-muted-foreground font-mono">{new Date(h.event_date).toLocaleDateString()}</span>}
-                          <span className="text-xs text-muted-foreground font-mono">{hackTeams.length} teams</span>
+                      <div className="flex items-center gap-4">
+                        {h.poster_url && (
+                          <img src={h.poster_url} alt={h.name} className="w-12 h-12 rounded-lg object-cover border border-border" />
+                        )}
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold">{h.name}</h3>
+                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${h.status === "ended" ? "bg-muted text-muted-foreground" : "bg-success/10 text-success"}`}>
+                              {h.status.toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 mt-1">
+                            <span className="text-[10px] font-mono text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">{h.theme}</span>
+                            {h.event_date && <span className="text-xs text-muted-foreground font-mono">{new Date(h.event_date).toLocaleDateString()}</span>}
+                            <span className="text-xs text-muted-foreground font-mono">{hackTeams.length} teams</span>
+                          </div>
                         </div>
                       </div>
                       {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
                     </button>
 
-                    {/* Expanded Content */}
                     <AnimatePresence>
                       {isExpanded && (
                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                           <div className="px-5 pb-5 space-y-4">
+                            {/* Poster preview */}
+                            {h.poster_url && (
+                              <div className="rounded-lg overflow-hidden border border-border">
+                                <img src={h.poster_url} alt={h.name} className="w-full max-h-64 object-cover" />
+                              </div>
+                            )}
+
                             {/* Actions */}
                             <div className="flex flex-wrap gap-2">
                               <Button variant="outline" size="sm" className="font-mono text-[10px]" onClick={() => openChat(h.id)}>
@@ -476,6 +529,21 @@ const OrganizerDashboard = () => {
                               <Button variant="outline" size="sm" className="font-mono text-[10px]" onClick={() => setShowCertUpload(showCertUpload === h.id ? null : h.id)}>
                                 <Upload className="w-3 h-3 mr-1" /> ISSUE CERT
                               </Button>
+                              <ShareEvent hackathonName={h.name} hackathonId={h.id} />
+                              {h.demo_ppt_url && (
+                                <a href={h.demo_ppt_url} target="_blank" rel="noopener noreferrer">
+                                  <Button variant="outline" size="sm" className="font-mono text-[10px]">
+                                    <FileText className="w-3 h-3 mr-1" /> DEMO PPT
+                                  </Button>
+                                </a>
+                              )}
+                              {h.brochure_url && (
+                                <a href={h.brochure_url} target="_blank" rel="noopener noreferrer">
+                                  <Button variant="outline" size="sm" className="font-mono text-[10px]">
+                                    <FileText className="w-3 h-3 mr-1" /> BROCHURE
+                                  </Button>
+                                </a>
+                              )}
                               {h.status === "active" && (
                                 <Button variant="outline" size="sm" className="font-mono text-[10px] text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => handleEndHackathon(h.id)}>
                                   <StopCircle className="w-3 h-3 mr-1" /> END EVENT
@@ -553,7 +621,6 @@ const OrganizerDashboard = () => {
                                         {isTeamExpanded && (
                                           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                                             <div className="px-3 pb-3 space-y-2">
-                                              {/* Leader */}
                                               <div className="p-2 rounded bg-background/50">
                                                 <p className="text-[10px] font-mono text-muted-foreground mb-1">TEAM LEADER</p>
                                                 {leader && (
@@ -565,8 +632,6 @@ const OrganizerDashboard = () => {
                                                   </div>
                                                 )}
                                               </div>
-
-                                              {/* Members */}
                                               {members.filter(m => m.user_id !== t.leader_id).map(m => {
                                                 const mp = getProfile(m.user_id);
                                                 return mp ? (
@@ -577,8 +642,6 @@ const OrganizerDashboard = () => {
                                                   </div>
                                                 ) : null;
                                               })}
-
-                                              {/* PPT */}
                                               {t.ppt_url && (
                                                 <a href={t.ppt_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] font-mono text-muted-foreground hover:text-foreground">
                                                   <FileText className="w-3 h-3" /> VIEW PPT
