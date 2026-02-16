@@ -37,8 +37,8 @@ const features = [
 ];
 
 const stats = [
-  { value: "Polygon", label: "Blockchain" },
   { value: "SHA256", label: "Verification" },
+  { value: "Axon ID", label: "Identity" },
   { value: "∞", label: "Scalable" },
 ];
 
@@ -221,7 +221,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t border-border/50 px-8 py-6 text-center relative z-10">
         <p className="text-[10px] font-mono text-muted-foreground/60 tracking-[0.3em]">
-          AXON © 2026 — POLYGON BLOCKCHAIN VERIFIED
+          AXON © 2026 — BLOCKCHAIN VERIFIED
         </p>
       </footer>
     </div>
