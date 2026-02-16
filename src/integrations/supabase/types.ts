@@ -99,12 +99,67 @@ export type Database = {
           },
         ]
       }
+      community_posts: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          image_url: string | null
+          likes_count: number
+          post_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          likes_count?: number
+          post_type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          likes_count?: number
+          post_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
       hackathons: {
         Row: {
           accommodation: boolean | null
           brochure_url: string | null
           cash_prize: number | null
           created_at: string
+          demo_ppt_url: string | null
           description: string | null
           entry_fee: number | null
           event_date: string | null
@@ -113,6 +168,7 @@ export type Database = {
           location: string | null
           name: string
           organizer_id: string
+          poster_url: string | null
           problem_statements: string | null
           status: string
           team_size_limit: number | null
@@ -124,6 +180,7 @@ export type Database = {
           brochure_url?: string | null
           cash_prize?: number | null
           created_at?: string
+          demo_ppt_url?: string | null
           description?: string | null
           entry_fee?: number | null
           event_date?: string | null
@@ -132,6 +189,7 @@ export type Database = {
           location?: string | null
           name: string
           organizer_id: string
+          poster_url?: string | null
           problem_statements?: string | null
           status?: string
           team_size_limit?: number | null
@@ -143,6 +201,7 @@ export type Database = {
           brochure_url?: string | null
           cash_prize?: number | null
           created_at?: string
+          demo_ppt_url?: string | null
           description?: string | null
           entry_fee?: number | null
           event_date?: string | null
@@ -151,11 +210,45 @@ export type Database = {
           location?: string | null
           name?: string
           organizer_id?: string
+          poster_url?: string | null
           problem_statements?: string | null
           status?: string
           team_size_limit?: number | null
           theme?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          link: string | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          message?: string
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -201,6 +294,97 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      post_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_likes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      private_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          message_type: string
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          message_type?: string
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          message_type?: string
+          receiver_id?: string
+          sender_id?: string
         }
         Relationships: []
       }
