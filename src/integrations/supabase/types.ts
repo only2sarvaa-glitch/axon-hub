@@ -102,6 +102,7 @@ export type Database = {
       hackathons: {
         Row: {
           accommodation: boolean | null
+          brochure_url: string | null
           cash_prize: number | null
           created_at: string
           description: string | null
@@ -120,6 +121,7 @@ export type Database = {
         }
         Insert: {
           accommodation?: boolean | null
+          brochure_url?: string | null
           cash_prize?: number | null
           created_at?: string
           description?: string | null
@@ -138,6 +140,7 @@ export type Database = {
         }
         Update: {
           accommodation?: boolean | null
+          brochure_url?: string | null
           cash_prize?: number | null
           created_at?: string
           description?: string | null
@@ -276,6 +279,7 @@ export type Database = {
           hackathon_id: string
           id: string
           leader_id: string
+          ppt_url: string | null
           status: string
           team_name: string
         }
@@ -285,6 +289,7 @@ export type Database = {
           hackathon_id: string
           id?: string
           leader_id: string
+          ppt_url?: string | null
           status?: string
           team_name?: string
         }
@@ -294,6 +299,7 @@ export type Database = {
           hackathon_id?: string
           id?: string
           leader_id?: string
+          ppt_url?: string | null
           status?: string
           team_name?: string
         }
