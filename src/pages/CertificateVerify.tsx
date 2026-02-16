@@ -4,8 +4,9 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, XCircle, Upload, Link as LinkIcon, Shield, FileText } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, Upload, Shield, FileText, ExternalLink, Hexagon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import FloatingDots from "@/components/FloatingDots";
 
 const CertificateVerify = () => {
   const navigate = useNavigate();
@@ -42,13 +43,11 @@ const CertificateVerify = () => {
     setVerificationResult(null);
     setCertDetails(null);
 
-    // Generate SHA256 hash of uploaded file
     const buffer = await uploadedFile.arrayBuffer();
     const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 
-    // Search for matching hash
     const { data } = await supabase
       .from("certificates")
       .select("*")
@@ -70,16 +69,26 @@ const CertificateVerify = () => {
     else await handleVerifyByFile();
   };
 
+  const getPolygonScanLink = (tx: string | null) => {
+    if (!tx) return null;
+    return `https://polygonscan.com/tx/${tx}`;
+  };
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <nav className="flex items-center px-8 py-6 border-b border-border/50">
+    <div className="min-h-screen bg-background flex flex-col relative">
+      <FloatingDots />
+
+      <nav className="flex items-center px-8 py-6 border-b border-border/50 relative z-10">
         <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="font-mono text-xs tracking-wider gap-2">
           <ArrowLeft className="w-4 h-4" /> BACK
         </Button>
-        <span className="ml-auto font-mono text-sm text-muted-foreground tracking-[0.2em]">VERIFY</span>
+        <div className="ml-auto flex items-center gap-2">
+          <Hexagon className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+          <span className="font-mono text-sm text-muted-foreground tracking-[0.2em]">VERIFY</span>
+        </div>
       </nav>
 
-      <main className="flex-1 flex items-center justify-center px-8 py-16">
+      <main className="flex-1 flex items-center justify-center px-8 py-16 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -89,9 +98,23 @@ const CertificateVerify = () => {
             <Shield className="w-7 h-7 text-muted-foreground" />
             <h2 className="text-3xl font-bold tracking-tight">Verify Certificate</h2>
           </div>
-          <p className="text-sm text-muted-foreground mb-8">
-            Blockchain-powered SHA256 hash verification on Polygon
+          <p className="text-sm text-muted-foreground mb-2">
+            Blockchain-powered SHA256 content hash verification on Polygon (MATIC)
           </p>
+          {/* Polygon badge */}
+          <div className="flex items-center gap-2 mb-8">
+            <span className="text-[10px] font-mono bg-accent/80 border border-border px-3 py-1 rounded-full text-muted-foreground tracking-wider">
+              POLYGON MAINNET
+            </span>
+            <a
+              href="https://polygonscan.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] font-mono text-muted-foreground/60 hover:text-foreground transition-colors flex items-center gap-1"
+            >
+              PolygonScan <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
 
           {/* Method tabs */}
           <div className="flex gap-1 mb-6 bg-secondary/50 p-1 rounded-xl w-fit">
@@ -144,7 +167,7 @@ const CertificateVerify = () => {
                     <>
                       <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
                       <p className="text-sm text-muted-foreground">Drop certificate PDF here</p>
-                      <p className="text-xs text-muted-foreground mt-1 font-mono">SHA256 hash will be computed & matched</p>
+                      <p className="text-xs text-muted-foreground mt-1 font-mono">Content-based SHA256 hash verification</p>
                     </>
                   )}
                 </div>
@@ -152,7 +175,7 @@ const CertificateVerify = () => {
             )}
 
             <Button type="submit" variant="hero" size="xl" className="w-full mt-6" disabled={loading}>
-              {loading ? "VERIFYING ON BLOCKCHAIN..." : "VERIFY CERTIFICATE"}
+              {loading ? "VERIFYING ON POLYGON..." : "VERIFY CERTIFICATE"}
             </Button>
           </form>
 
@@ -170,16 +193,30 @@ const CertificateVerify = () => {
               {verificationResult === "verified" ? (
                 <>
                   <CheckCircle className="w-12 h-12 text-success mx-auto mb-3" />
-                  <p className="font-bold text-lg">VERIFIED ✓</p>
+                  <p className="font-bold text-lg">VERIFIED ON POLYGON ✓</p>
                   <p className="text-xs text-muted-foreground font-mono mt-1">
-                    Certificate hash matches blockchain record
+                    Certificate content hash matches blockchain record
                   </p>
                   {certDetails && (
                     <div className="mt-4 text-left bg-background/50 rounded-lg p-4 space-y-2 text-xs font-mono">
                       <p><span className="text-muted-foreground">Axon ID:</span> {certDetails.axon_id}</p>
                       <p><span className="text-muted-foreground">Type:</span> {certDetails.certificate_type}</p>
-                      <p><span className="text-muted-foreground">Hash:</span> {certDetails.hash?.substring(0, 32)}...</p>
-                      <p><span className="text-muted-foreground">Blockchain TX:</span> {certDetails.blockchain_tx?.substring(0, 32)}...</p>
+                      <p><span className="text-muted-foreground">SHA256:</span> {certDetails.hash?.substring(0, 32)}...</p>
+                      {certDetails.blockchain_tx && (
+                        <p className="flex items-center gap-2">
+                          <span className="text-muted-foreground">Polygon TX:</span>
+                          <a
+                            href={getPolygonScanLink(certDetails.blockchain_tx)!}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-foreground hover:underline flex items-center gap-1"
+                          >
+                            {certDetails.blockchain_tx.substring(0, 20)}...
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </p>
+                      )}
+                      <p><span className="text-muted-foreground">Network:</span> Polygon Mainnet (MATIC)</p>
                       <p><span className="text-muted-foreground">Issued:</span> {new Date(certDetails.created_at).toLocaleDateString()}</p>
                     </div>
                   )}
@@ -189,7 +226,7 @@ const CertificateVerify = () => {
                   <XCircle className="w-12 h-12 text-destructive mx-auto mb-3" />
                   <p className="font-bold text-lg">NOT VERIFIED</p>
                   <p className="text-xs text-muted-foreground font-mono mt-1">
-                    No matching record found on blockchain
+                    No matching record found on Polygon blockchain
                   </p>
                 </>
               )}
