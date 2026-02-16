@@ -4,12 +4,16 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Shield } from "lucide-react";
+import { ArrowLeft, Shield, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+type View = "login" | "forgot";
+
 const AdminAuth = () => {
+  const [view, setView] = useState<View>("login");
   const [loading, setLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
@@ -20,49 +24,93 @@ const AdminAuth = () => {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) {
-      toast({ title: "Login failed", description: error.message, variant: "destructive" });
-    } else {
-      navigate("/admin/dashboard");
-    }
+    if (error) toast({ title: "Login failed", description: error.message, variant: "destructive" });
+    else navigate("/admin/dashboard");
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    else setResetSent(true);
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <nav className="flex items-center px-8 py-6 border-b border-border/50">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="font-mono text-xs tracking-wider gap-2">
-          <ArrowLeft className="w-4 h-4" /> BACK
+      <nav className="flex items-center px-8 py-6 border-b border-border/40">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="font-mono text-[11px] tracking-[0.15em] gap-2 text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="w-3.5 h-3.5" /> BACK
         </Button>
-        <span className="ml-auto font-mono text-sm text-muted-foreground tracking-[0.2em]">ADMIN</span>
+        <span className="ml-auto font-mono text-[11px] text-muted-foreground/60 tracking-[0.25em]">ADMIN</span>
       </nav>
 
       <main className="flex-1 flex items-center justify-center px-8 py-16">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          key={view}
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md"
+          transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="w-full max-w-[420px]"
         >
-          <div className="flex items-center gap-3 mb-6">
-            <Shield className="w-8 h-8 text-muted-foreground" />
-            <h2 className="text-3xl font-bold tracking-tight">Admin access</h2>
-          </div>
-          <p className="text-sm text-muted-foreground mb-8">
-            Platform administration login
-          </p>
+          {view === "forgot" ? (
+            <>
+              <div className="mb-8">
+                <Mail className="w-8 h-8 text-muted-foreground/40 mb-5" strokeWidth={1.5} />
+                <h2 className="text-2xl font-bold tracking-tight mb-2">Reset password</h2>
+                <p className="text-sm text-muted-foreground leading-relaxed">Enter your admin email for a reset link.</p>
+              </div>
+              {resetSent ? (
+                <div className="rounded-xl border border-success/20 bg-success/5 p-6 text-center">
+                  <p className="text-sm text-foreground font-medium mb-1">Reset link sent</p>
+                  <p className="text-xs text-muted-foreground">Check your inbox.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleForgotPassword} className="space-y-5">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-mono tracking-[0.2em] text-muted-foreground/80">EMAIL ADDRESS</Label>
+                    <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="h-12 bg-card border-border/60 focus:border-foreground/30 transition-colors" placeholder="admin@email.com" />
+                  </div>
+                  <Button type="submit" className="w-full h-12 font-mono text-xs tracking-[0.15em] bg-foreground text-background hover:bg-foreground/90" disabled={loading}>
+                    {loading ? "SENDING..." : "SEND RESET LINK"}
+                  </Button>
+                </form>
+              )}
+              <button onClick={() => { setView("login"); setResetSent(false); }} className="block mx-auto mt-6 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                ← Back to sign in
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="mb-8">
+                <Shield className="w-8 h-8 text-muted-foreground/40 mb-5" strokeWidth={1.5} />
+                <h2 className="text-2xl font-bold tracking-tight mb-2">Admin access</h2>
+                <p className="text-sm text-muted-foreground leading-relaxed">Platform administration login</p>
+              </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <Label className="text-xs font-mono tracking-wider text-muted-foreground">EMAIL</Label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1 bg-card border-border" />
-            </div>
-            <div>
-              <Label className="text-xs font-mono tracking-wider text-muted-foreground">PASSWORD</Label>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="mt-1 bg-card border-border" />
-            </div>
-            <Button type="submit" variant="hero" size="xl" className="w-full mt-6" disabled={loading}>
-              {loading ? "Authenticating..." : "AUTHENTICATE"}
-            </Button>
-          </form>
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-mono tracking-[0.2em] text-muted-foreground/80">EMAIL ADDRESS</Label>
+                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="h-12 bg-card border-border/60 focus:border-foreground/30 transition-colors" placeholder="admin@email.com" />
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[10px] font-mono tracking-[0.2em] text-muted-foreground/80">PASSWORD</Label>
+                    <button type="button" onClick={() => setView("forgot")} className="text-[10px] font-mono tracking-wider text-muted-foreground hover:text-foreground transition-colors">
+                      FORGOT?
+                    </button>
+                  </div>
+                  <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="h-12 bg-card border-border/60 focus:border-foreground/30 transition-colors" placeholder="••••••••" />
+                </div>
+                <Button type="submit" className="w-full h-12 font-mono text-xs tracking-[0.15em] bg-foreground text-background hover:bg-foreground/90 transition-all mt-2" disabled={loading}>
+                  {loading ? "AUTHENTICATING..." : "AUTHENTICATE"}
+                </Button>
+              </form>
+            </>
+          )}
         </motion.div>
       </main>
     </div>
