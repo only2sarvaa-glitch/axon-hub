@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { NotificationBell } from "@/components/NotificationBell";
 import { ShareEvent } from "@/components/ShareEvent";
 import { EmojiPicker } from "@/components/EmojiPicker";
+import { FileViewerButton } from "@/components/FileViewer";
 
 interface Hackathon {
   id: string;
@@ -531,18 +532,18 @@ const OrganizerDashboard = () => {
                               </Button>
                               <ShareEvent hackathonName={h.name} hackathonId={h.id} />
                               {h.demo_ppt_url && (
-                                <a href={h.demo_ppt_url} target="_blank" rel="noopener noreferrer">
+                                <FileViewerButton url={h.demo_ppt_url} title={`${h.name} - Demo PPT`}>
                                   <Button variant="outline" size="sm" className="font-mono text-[10px]">
                                     <FileText className="w-3 h-3 mr-1" /> DEMO PPT
                                   </Button>
-                                </a>
+                                </FileViewerButton>
                               )}
                               {h.brochure_url && (
-                                <a href={h.brochure_url} target="_blank" rel="noopener noreferrer">
+                                <FileViewerButton url={h.brochure_url} title={`${h.name} - Brochure`}>
                                   <Button variant="outline" size="sm" className="font-mono text-[10px]">
                                     <FileText className="w-3 h-3 mr-1" /> BROCHURE
                                   </Button>
-                                </a>
+                                </FileViewerButton>
                               )}
                               {h.status === "active" && (
                                 <Button variant="outline" size="sm" className="font-mono text-[10px] text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => handleEndHackathon(h.id)}>
@@ -643,9 +644,9 @@ const OrganizerDashboard = () => {
                                                 ) : null;
                                               })}
                                               {t.ppt_url && (
-                                                <a href={t.ppt_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] font-mono text-muted-foreground hover:text-foreground">
+                                                <FileViewerButton url={t.ppt_url} title={`${t.team_name} - PPT`} className="inline-flex items-center gap-1 text-[10px] font-mono text-muted-foreground hover:text-foreground">
                                                   <FileText className="w-3 h-3" /> VIEW PPT
-                                                </a>
+                                                </FileViewerButton>
                                               )}
                                             </div>
                                           </motion.div>
