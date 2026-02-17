@@ -245,6 +245,20 @@ const OrganizerDashboard = () => {
       return;
     }
 
+    // Store hash on Polygon blockchain
+    let blockchainTx = "";
+    try {
+      const { data: polygonData, error: polygonError } = await supabase.functions.invoke("polygon-certificate", {
+        body: { action: "store", certificate_hash: hashHex },
+      });
+      if (polygonError) throw polygonError;
+      blockchainTx = polygonData?.tx_hash || "";
+      toast({ title: "⛓️ On-Chain", description: `Stored on Polygon: ${blockchainTx.substring(0, 16)}...` });
+    } catch (err: any) {
+      console.error("Polygon error:", err);
+      toast({ title: "Blockchain Warning", description: "Hash stored locally. On-chain storage failed: " + (err?.message || "Unknown error"), variant: "destructive" });
+    }
+
     const { error: certError } = await supabase.from("certificates").insert({
       axon_id: certForm.axon_id,
       hackathon_id: showCertUpload,
@@ -252,7 +266,7 @@ const OrganizerDashboard = () => {
       certificate_type: certForm.certificate_type,
       file_url: publicUrl,
       hash: hashHex,
-      blockchain_tx: `0x${hashHex.substring(0, 40)}`,
+      blockchain_tx: blockchainTx,
       verified: true,
     });
 

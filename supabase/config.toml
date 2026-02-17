@@ -1,1 +1,4 @@
 project_id = "nabeufnjuvonxtwxfpoz"
+
+[functions.polygon-certificate]
+verify_jwt = false

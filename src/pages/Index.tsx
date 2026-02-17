@@ -37,9 +37,10 @@ const features = [
 ];
 
 const stats = [
+  { value: "Polygon", label: "Blockchain" },
   { value: "SHA256", label: "Verification" },
   { value: "Axon ID", label: "Identity" },
-  { value: "∞", label: "Scalable" },
+  { value: "Amoy", label: "Testnet" },
 ];
 
 const Index = () => {
@@ -139,7 +140,7 @@ const Index = () => {
             transition={{ delay: 0.3 }}
             className="text-base md:text-lg text-muted-foreground font-light leading-relaxed max-w-lg mx-auto mb-10"
           >
-            Unified Student Hackathon & Blockchain Certificate Verification Platform
+            Unified Student Hackathon & Polygon Blockchain Certificate Verification Platform
           </motion.p>
 
           {/* Stats row */}
@@ -221,7 +222,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t border-border/50 px-8 py-6 text-center relative z-10">
         <p className="text-[10px] font-mono text-muted-foreground/60 tracking-[0.3em]">
-          AXON © 2026 — BLOCKCHAIN VERIFIED
+          AXON © 2026 — POWERED BY POLYGON BLOCKCHAIN
         </p>
       </footer>
     </div>
