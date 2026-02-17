@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { LogOut, CheckCircle, XCircle, Building2, AlertTriangle, Users, Calendar, Shield } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
 
 interface OrganizerApplication {
@@ -101,6 +102,7 @@ const AdminDashboard = () => {
             <Shield className="w-3 h-3 text-muted-foreground" />
             <span className="text-xs font-mono text-muted-foreground">ADMIN</span>
           </div>
+          <ThemeToggle />
           <Button variant="ghost" size="sm" onClick={handleLogout}>
             <LogOut className="w-4 h-4" />
           </Button>
