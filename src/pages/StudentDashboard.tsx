@@ -8,6 +8,7 @@ import {
   User, Plus, Upload, X, Send, FileText, ChevronRight, MapPin, Trophy,
   Check, Hexagon, Heart, Globe, Image
 } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -316,6 +317,7 @@ const StudentDashboard = () => {
               <User className="w-4 h-4" />
             )}
           </Button>
+          <ThemeToggle />
           <Button variant="ghost" size="sm" onClick={handleLogout}>
             <LogOut className="w-4 h-4" />
           </Button>

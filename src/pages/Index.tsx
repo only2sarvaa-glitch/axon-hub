@@ -3,6 +3,7 @@ import { motion, useMotionValue, useSpring } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { GraduationCap, Building2, Shield, ArrowRight, CheckCircle, Hexagon, Zap, Users, Award, MessageSquare } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import FloatingDots from "@/components/FloatingDots";
 
 const roles = [
@@ -107,6 +108,7 @@ const Index = () => {
           >
             VERIFY
           </Button>
+          <ThemeToggle />
         </motion.div>
       </nav>
 

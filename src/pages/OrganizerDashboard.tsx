@@ -16,6 +16,7 @@ import { ShareEvent } from "@/components/ShareEvent";
 import { EmojiPicker } from "@/components/EmojiPicker";
 import { FileViewerButton } from "@/components/FileViewer";
 import FloatingDots from "@/components/FloatingDots";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface Hackathon {
   id: string;
@@ -356,6 +357,7 @@ const OrganizerDashboard = () => {
         <div className="flex items-center gap-3">
           <span className="text-xs font-mono text-muted-foreground">{user?.user_metadata?.club_name || "Organizer"}</span>
           {user && <NotificationBell userId={user.id} />}
+          <ThemeToggle />
           <Button variant="ghost" size="sm" onClick={handleLogout}><LogOut className="w-4 h-4" /></Button>
         </div>
       </nav>
