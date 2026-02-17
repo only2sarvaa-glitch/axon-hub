@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, XCircle, Upload, Shield, FileText, ExternalLink, Hexagon } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, Upload, Shield, FileText, ExternalLink, Hexagon, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import FloatingDots from "@/components/FloatingDots";
 
@@ -16,11 +16,14 @@ const CertificateVerify = () => {
   const [verificationResult, setVerificationResult] = useState<null | "verified" | "fake">(null);
   const [certDetails, setCertDetails] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [blockchainVerified, setBlockchainVerified] = useState<boolean | null>(null);
+  const [verifyingOnChain, setVerifyingOnChain] = useState(false);
 
   const handleVerifyById = async () => {
     setLoading(true);
     setVerificationResult(null);
     setCertDetails(null);
+    setBlockchainVerified(null);
 
     const { data } = await supabase
       .from("certificates")
@@ -31,6 +34,10 @@ const CertificateVerify = () => {
     if (data && data.length > 0) {
       setVerificationResult("verified");
       setCertDetails(data[0]);
+      // Try on-chain verification
+      if (data[0].blockchain_tx && data[0].hash) {
+        await verifyOnChain(data[0].blockchain_tx, data[0].hash);
+      }
     } else {
       setVerificationResult("fake");
     }
@@ -42,6 +49,7 @@ const CertificateVerify = () => {
     setLoading(true);
     setVerificationResult(null);
     setCertDetails(null);
+    setBlockchainVerified(null);
 
     const buffer = await uploadedFile.arrayBuffer();
     const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
@@ -57,10 +65,28 @@ const CertificateVerify = () => {
     if (data && data.length > 0) {
       setVerificationResult("verified");
       setCertDetails(data[0]);
+      if (data[0].blockchain_tx && data[0].hash) {
+        await verifyOnChain(data[0].blockchain_tx, data[0].hash);
+      }
     } else {
       setVerificationResult("fake");
     }
     setLoading(false);
+  };
+
+  const verifyOnChain = async (txHash: string, certHash: string) => {
+    setVerifyingOnChain(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("polygon-certificate", {
+        body: { action: "verify", tx_hash: txHash, certificate_hash: certHash },
+      });
+      if (error) throw error;
+      setBlockchainVerified(data?.verified === true);
+    } catch (err) {
+      console.error("On-chain verification error:", err);
+      setBlockchainVerified(null);
+    }
+    setVerifyingOnChain(false);
   };
 
   const handleVerify = async (e: React.FormEvent) => {
@@ -71,7 +97,7 @@ const CertificateVerify = () => {
 
   const getPolygonScanLink = (tx: string | null) => {
     if (!tx) return null;
-    return `https://polygonscan.com/tx/${tx}`;
+    return `https://amoy.polygonscan.com/tx/${tx}`;
   };
 
   return (
@@ -99,15 +125,15 @@ const CertificateVerify = () => {
             <h2 className="text-3xl font-bold tracking-tight">Verify Certificate</h2>
           </div>
           <p className="text-sm text-muted-foreground mb-2">
-            Blockchain-powered SHA256 content hash verification on Polygon (MATIC)
+            Live blockchain verification on Polygon Amoy Testnet
           </p>
           {/* Polygon badge */}
           <div className="flex items-center gap-2 mb-8">
             <span className="text-[10px] font-mono bg-accent/80 border border-border px-3 py-1 rounded-full text-muted-foreground tracking-wider">
-              POLYGON MAINNET
+              POLYGON AMOY TESTNET
             </span>
             <a
-              href="https://polygonscan.com"
+              href="https://amoy.polygonscan.com"
               target="_blank"
               rel="noopener noreferrer"
               className="text-[10px] font-mono text-muted-foreground/60 hover:text-foreground transition-colors flex items-center gap-1"
@@ -124,7 +150,7 @@ const CertificateVerify = () => {
             ].map((m) => (
               <button
                 key={m.key}
-                onClick={() => { setMethod(m.key); setVerificationResult(null); setCertDetails(null); }}
+                onClick={() => { setMethod(m.key); setVerificationResult(null); setCertDetails(null); setBlockchainVerified(null); }}
                 className={`px-5 py-2 rounded-lg text-xs font-mono tracking-wider transition-all ${
                   method === m.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                 }`}
@@ -174,7 +200,7 @@ const CertificateVerify = () => {
               </div>
             )}
 
-            <Button type="submit" variant="hero" size="xl" className="w-full mt-6" disabled={loading}>
+            <Button type="submit" className="w-full mt-6 font-mono bg-foreground text-background hover:bg-foreground/90" disabled={loading}>
               {loading ? "VERIFYING ON POLYGON..." : "VERIFY CERTIFICATE"}
             </Button>
           </form>
@@ -186,17 +212,43 @@ const CertificateVerify = () => {
               animate={{ opacity: 1, scale: 1 }}
               className={`mt-8 p-6 rounded-xl border text-center ${
                 verificationResult === "verified"
-                  ? "border-success/30 bg-success/5"
+                  ? "border-green-500/30 bg-green-500/5"
                   : "border-destructive/30 bg-destructive/5"
               }`}
             >
               {verificationResult === "verified" ? (
                 <>
-                  <CheckCircle className="w-12 h-12 text-success mx-auto mb-3" />
-                  <p className="font-bold text-lg">VERIFIED ON POLYGON ✓</p>
+                  <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+                  <p className="font-bold text-lg">VERIFIED ✓</p>
                   <p className="text-xs text-muted-foreground font-mono mt-1">
-                    Certificate content hash matches blockchain record
+                    Certificate hash matched in database
                   </p>
+
+                  {/* Blockchain verification status */}
+                  <div className="mt-3 flex items-center justify-center gap-2">
+                    {verifyingOnChain ? (
+                      <span className="text-xs font-mono text-muted-foreground flex items-center gap-1">
+                        <Loader2 className="w-3 h-3 animate-spin" /> Verifying on Polygon...
+                      </span>
+                    ) : blockchainVerified === true ? (
+                      <span className="text-xs font-mono text-green-500 flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" /> ON-CHAIN VERIFIED ⛓️
+                      </span>
+                    ) : blockchainVerified === false ? (
+                      <span className="text-xs font-mono text-yellow-500 flex items-center gap-1">
+                        ⚠️ On-chain data mismatch
+                      </span>
+                    ) : certDetails?.blockchain_tx ? (
+                      <span className="text-xs font-mono text-muted-foreground">
+                        On-chain check unavailable
+                      </span>
+                    ) : (
+                      <span className="text-xs font-mono text-muted-foreground">
+                        Issued before blockchain integration
+                      </span>
+                    )}
+                  </div>
+
                   {certDetails && (
                     <div className="mt-4 text-left bg-background/50 rounded-lg p-4 space-y-2 text-xs font-mono">
                       <p><span className="text-muted-foreground">Axon ID:</span> {certDetails.axon_id}</p>
@@ -216,7 +268,7 @@ const CertificateVerify = () => {
                           </a>
                         </p>
                       )}
-                      <p><span className="text-muted-foreground">Network:</span> Polygon Mainnet (MATIC)</p>
+                      <p><span className="text-muted-foreground">Network:</span> Polygon Amoy Testnet</p>
                       <p><span className="text-muted-foreground">Issued:</span> {new Date(certDetails.created_at).toLocaleDateString()}</p>
                     </div>
                   )}
@@ -226,7 +278,7 @@ const CertificateVerify = () => {
                   <XCircle className="w-12 h-12 text-destructive mx-auto mb-3" />
                   <p className="font-bold text-lg">NOT VERIFIED</p>
                   <p className="text-xs text-muted-foreground font-mono mt-1">
-                    No matching record found on Polygon blockchain
+                    No matching record found on database or Polygon blockchain
                   </p>
                 </>
               )}
