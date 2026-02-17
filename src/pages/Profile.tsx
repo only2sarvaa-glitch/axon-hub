@@ -53,10 +53,25 @@ const Profile = () => {
   }, [user, viewUserId]);
 
   const fetchProfile = async (targetId: string) => {
-    const { data } = await supabase.from("profiles").select("*").eq("user_id", targetId).single();
+    const { data } = await supabase.from("profiles").select("*").eq("user_id", targetId).maybeSingle();
     if (data) {
       setProfile(data as ProfileData);
       setEditForm({ name: data.name || "", college: data.college || "", phone: data.phone || "" });
+    } else {
+      // No profile row yet — use auth metadata as fallback for own profile
+      if (user && targetId === user.id) {
+        const meta = user.user_metadata || {};
+        setProfile({
+          user_id: user.id,
+          name: meta.name || "",
+          email: meta.email || user.email || "",
+          phone: meta.phone || "",
+          axon_id: null,
+          college: meta.college || "",
+          avatar_url: null,
+        });
+        setEditForm({ name: meta.name || "", college: meta.college || "", phone: meta.phone || "" });
+      }
     }
   };
 
@@ -69,7 +84,7 @@ const Profile = () => {
     setFollowingCount(followingRes.count || 0);
 
     if (user && targetId !== user.id) {
-      const { data } = await supabase.from("follows").select("id").eq("follower_id", user.id).eq("following_id", targetId).single();
+      const { data } = await supabase.from("follows").select("id").eq("follower_id", user.id).eq("following_id", targetId).maybeSingle();
       setIsFollowing(!!data);
     }
   };
