@@ -125,6 +125,8 @@ const StudentDashboard = () => {
   }, [user]);
 
   const fetchData = async () => {
+    // Auto-close expired hackathons
+    await supabase.rpc("auto_close_expired_hackathons");
     const [profileRes, hackRes, certRes] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", user.id).single(),
       supabase.from("hackathons").select("*").order("event_date", { ascending: true }),

@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, Hexagon, Heart, MessageCircle, Send, Image, Trash2, User
 } from "lucide-react";
+import { Stories } from "@/components/Stories";
 
 interface Post {
   id: string;
@@ -174,6 +175,9 @@ const Community = () => {
       </nav>
 
       <main className="max-w-2xl mx-auto px-8 py-6">
+        {/* Stories */}
+        {user && <Stories userId={user.id} />}
+
         {/* Create post */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-4 mb-6">
           <textarea
